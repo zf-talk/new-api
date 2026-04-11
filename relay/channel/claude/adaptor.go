@@ -79,6 +79,23 @@ func CommonClaudeHeadersOperation(c *gin.Context, req *http.Header, info *relayc
 	model_setting.GetClaudeSettings().WriteHeaders(info.OriginModelName, req)
 }
 
+// claudeCodeClientHeaders are the headers that mimic a Claude Code CLI client.
+// Some upstream channels (e.g. sub2api-based proxies) reject requests that do
+// not carry a valid Claude Code User-Agent.
+var claudeCodeClientHeaders = map[string]string{
+	"User-Agent":                                "claude-cli/2.1.22 (external, cli)",
+	"X-App":                                     "cli",
+	"X-Stainless-Lang":                          "js",
+	"X-Stainless-Package-Version":               "0.70.0",
+	"X-Stainless-OS":                            "Linux",
+	"X-Stainless-Arch":                          "arm64",
+	"X-Stainless-Runtime":                       "node",
+	"X-Stainless-Runtime-Version":               "v24.13.0",
+	"X-Stainless-Retry-Count":                   "0",
+	"X-Stainless-Timeout":                       "600",
+	"Anthropic-Dangerous-Direct-Browser-Access": "true",
+}
+
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
 	req.Set("x-api-key", info.ApiKey)
@@ -87,6 +104,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 		anthropicVersion = "2023-06-01"
 	}
 	req.Set("anthropic-version", anthropicVersion)
+	for k, v := range claudeCodeClientHeaders {
+		req.Set(k, v)
+	}
 	CommonClaudeHeadersOperation(c, req, info)
 	return nil
 }
