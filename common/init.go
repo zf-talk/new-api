@@ -36,6 +36,10 @@ func InitEnv() {
 		Version = envVersion
 	}
 
+	if os.Getenv("SYSTEM_NAME") != "" {
+		SystemName = os.Getenv("SYSTEM_NAME")
+	}
+
 	if *PrintVersion {
 		fmt.Println(Version)
 		os.Exit(0)
