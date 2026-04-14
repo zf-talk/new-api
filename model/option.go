@@ -106,6 +106,15 @@ func InitOptionMap() {
 	common.OptionMap["WaffoUnitPrice"] = strconv.FormatFloat(setting.WaffoUnitPrice, 'f', -1, 64)
 	common.OptionMap["WaffoMinTopUp"] = strconv.Itoa(setting.WaffoMinTopUp)
 	common.OptionMap["WaffoPayMethods"] = setting.WaffoPayMethods2JsonString()
+	common.OptionMap["UsdtEnabled"] = strconv.FormatBool(setting.UsdtEnabled)
+	common.OptionMap["UsdtApiUrl"] = setting.UsdtApiUrl
+	common.OptionMap["UsdtApiAuthToken"] = setting.UsdtApiAuthToken
+	common.OptionMap["UsdtCurrency"] = setting.UsdtCurrency
+	common.OptionMap["UsdtNetwork"] = setting.UsdtNetwork
+	common.OptionMap["UsdtToken"] = setting.UsdtToken
+	common.OptionMap["UsdtQuotaPerUnit"] = strconv.FormatFloat(setting.UsdtQuotaPerUnit, 'f', -1, 64)
+	common.OptionMap["UsdtMinTopUp"] = strconv.FormatFloat(setting.UsdtMinTopUp, 'f', -1, 64)
+	common.OptionMap["UsdtOrderTimeout"] = strconv.Itoa(setting.UsdtOrderTimeout)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -407,6 +416,24 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.WaffoUnitPrice, _ = strconv.ParseFloat(value, 64)
 	case "WaffoMinTopUp":
 		setting.WaffoMinTopUp, _ = strconv.Atoi(value)
+	case "UsdtEnabled":
+		setting.UsdtEnabled = value == "true"
+	case "UsdtApiUrl":
+		setting.UsdtApiUrl = value
+	case "UsdtApiAuthToken":
+		setting.UsdtApiAuthToken = value
+	case "UsdtCurrency":
+		setting.UsdtCurrency = value
+	case "UsdtNetwork":
+		setting.UsdtNetwork = value
+	case "UsdtToken":
+		setting.UsdtToken = value
+	case "UsdtQuotaPerUnit":
+		setting.UsdtQuotaPerUnit, _ = strconv.ParseFloat(value, 64)
+	case "UsdtMinTopUp":
+		setting.UsdtMinTopUp, _ = strconv.ParseFloat(value, 64)
+	case "UsdtOrderTimeout":
+		setting.UsdtOrderTimeout, _ = strconv.Atoi(value)
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":

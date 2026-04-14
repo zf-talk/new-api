@@ -90,6 +90,10 @@ const RechargeCard = ({
   enableWaffoTopUp,
   waffoTopUp,
   waffoPayMethods,
+  enableUsdtTopUp,
+  usdtTopUp,
+  usdtMinTopUp,
+  usdtCurrency,
   subscriptionLoading = false,
   subscriptionPlans = [],
   billingPreference,
@@ -103,6 +107,8 @@ const RechargeCard = ({
   const initialTabSetRef = useRef(false);
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
   const [activeTab, setActiveTab] = useState('topup');
+  const [usdtAmount, setUsdtAmount] = useState('');
+  const [usdtLoading, setUsdtLoading] = useState(false);
   const shouldShowSubscription =
     !subscriptionLoading && subscriptionPlans.length > 0;
 
@@ -227,7 +233,7 @@ const RechargeCard = ({
           <div className='py-8 flex justify-center'>
             <Spin size='large' />
           </div>
-        ) : enableOnlineTopUp || enableStripeTopUp || enableCreemTopUp || enableWaffoTopUp ? (
+        ) : enableOnlineTopUp || enableStripeTopUp || enableCreemTopUp || enableWaffoTopUp || enableUsdtTopUp ? (
           <Form
             getFormApi={(api) => (onlineFormApiRef.current = api)}
             initValues={{ topUpCount: topUpCount }}
@@ -545,6 +551,47 @@ const RechargeCard = ({
                         </div>
                       </Card>
                     ))}
+                  </div>
+                </Form.Slot>
+              )}
+
+              {/* USDT 充值区域 */}
+              {enableUsdtTopUp && (
+                <Form.Slot label={t('USDT (TRC-20) 充值')}>
+                  <div className='space-y-3'>
+                    <Row gutter={12} type='flex' align='bottom'>
+                      <Col xs={16} sm={16} md={16}>
+                        <Form.InputNumber
+                          field='usdtAmount'
+                          noLabel
+                          placeholder={t('请输入充值金额，最低 ') + usdtMinTopUp + ' ' + usdtCurrency.toUpperCase()}
+                          min={usdtMinTopUp}
+                          max={999999999}
+                          step={1}
+                          precision={0}
+                          value={usdtAmount}
+                          onChange={(value) => setUsdtAmount(value)}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col xs={8} sm={8} md={8}>
+                        <Button
+                          theme='solid'
+                          type='primary'
+                          loading={usdtLoading}
+                          disabled={!usdtAmount || usdtAmount < usdtMinTopUp}
+                          onClick={async () => {
+                            setUsdtLoading(true);
+                            await usdtTopUp(usdtAmount);
+                            setUsdtLoading(false);
+                          }}
+                          style={{ width: '100%' }}
+                          icon={<Coins size={16} />}
+                        >
+                          {t('USDT 支付')}
+                        </Button>
+                      </Col>
+                    </Row>
                   </div>
                 </Form.Slot>
               )}

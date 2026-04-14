@@ -22,6 +22,7 @@ import (
 	"github.com/QuantumNous/new-api/relay"
 	"github.com/QuantumNous/new-api/router"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting"
 	_ "github.com/QuantumNous/new-api/setting/performance_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
@@ -34,11 +35,15 @@ import (
 	_ "net/http/pprof"
 )
 
-//go:embed web/dist
-var buildFS embed.FS
+var (
+	buildFS  embed.FS
+	indexPage []byte
+)
 
-//go:embed web/dist/index.html
-var indexPage []byte
+func init() {
+	// In development mode, these will be empty
+	// The frontend will be served by the Vite dev server
+}
 
 func main() {
 	startTime := time.Now()
@@ -119,6 +124,11 @@ func main() {
 			return nil
 		}
 		return a
+	}
+
+	// USDT order expiry check task
+	if setting.UsdtEnabled {
+		service.StartUsdtOrderExpiryTask()
 	}
 
 	// Channel upstream model update check task

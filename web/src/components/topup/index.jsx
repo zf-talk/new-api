@@ -76,6 +76,12 @@ const TopUp = () => {
   const [waffoPayMethods, setWaffoPayMethods] = useState([]);
   const [waffoMinTopUp, setWaffoMinTopUp] = useState(1);
 
+  // USDT 相关状态
+  const [enableUsdtTopUp, setEnableUsdtTopUp] = useState(false);
+  const [usdtMinTopUp, setUsdtMinTopUp] = useState(10);
+  const [usdtCurrency, setUsdtCurrency] = useState('cny');
+  const usdtPollingRef = useRef(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [payWay, setPayWay] = useState('');
@@ -346,6 +352,62 @@ const TopUp = () => {
     }
   };
 
+  const usdtTopUp = async (amount) => {
+    try {
+      if (amount < usdtMinTopUp) {
+        showError(t('充值金额不能小于') + ' ' + usdtMinTopUp);
+        return;
+      }
+      setPaymentLoading(true);
+      const res = await API.post('/api/user/usdt/pay', {
+        amount: parseFloat(amount),
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success' && data?.payment_url) {
+          window.open(data.payment_url, '_blank');
+          // Start polling for order status
+          startUsdtPolling(data.trade_no);
+        } else {
+          showError(data || t('支付请求失败'));
+        }
+      } else {
+        showError(t('支付请求失败'));
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const startUsdtPolling = (tradeNo) => {
+    // Clear any existing polling
+    if (usdtPollingRef.current) {
+      clearInterval(usdtPollingRef.current);
+    }
+    usdtPollingRef.current = setInterval(async () => {
+      try {
+        const res = await API.get(`/api/user/usdt/order/status?trade_no=${tradeNo}`);
+        if (res.data?.success) {
+          const status = res.data.data?.status;
+          if (status === 'success') {
+            clearInterval(usdtPollingRef.current);
+            usdtPollingRef.current = null;
+            showSuccess(t('USDT 充值成功！'));
+            getUserQuota();
+          } else if (status === 'expired') {
+            clearInterval(usdtPollingRef.current);
+            usdtPollingRef.current = null;
+            showError(t('订单已过期，请重新创建充值订单'));
+          }
+        }
+      } catch (e) {
+        // Polling error, continue silently
+      }
+    }, 10000);
+  };
+
   const processCreemCallback = (data) => {
     // 与 Stripe 保持一致的实现方式
     window.open(data.checkout_url, '_blank');
@@ -495,6 +557,12 @@ const TopUp = () => {
           setEnableWaffoTopUp(enableWaffoTopUp);
           setWaffoPayMethods(data.waffo_pay_methods || []);
           setWaffoMinTopUp(data.waffo_min_topup || 1);
+
+          // USDT 充值配置
+          const enableUsdt = data.enable_usdt_topup || false;
+          setEnableUsdtTopUp(enableUsdt);
+          setUsdtMinTopUp(data.usdt_min_topup || 10);
+          setUsdtCurrency(data.usdt_currency || 'cny');
           setMinTopUp(minTopUpValue);
           setTopUpCount(minTopUpValue);
 
@@ -569,6 +637,15 @@ const TopUp = () => {
     await copy(affLink);
     showSuccess(t('邀请链接已复制到剪切板'));
   };
+
+  // 清理 USDT 轮询定时器
+  useEffect(() => {
+    return () => {
+      if (usdtPollingRef.current) {
+        clearInterval(usdtPollingRef.current);
+      }
+    };
+  }, []);
 
   // URL 参数自动打开账单弹窗（支付回跳时触发）
   useEffect(() => {
@@ -791,6 +868,10 @@ const TopUp = () => {
           enableWaffoTopUp={enableWaffoTopUp}
           waffoTopUp={waffoTopUp}
           waffoPayMethods={waffoPayMethods}
+          enableUsdtTopUp={enableUsdtTopUp}
+          usdtTopUp={usdtTopUp}
+          usdtMinTopUp={usdtMinTopUp}
+          usdtCurrency={usdtCurrency}
           presetAmounts={presetAmounts}
           selectedPreset={selectedPreset}
           selectPresetAmount={selectPresetAmount}
