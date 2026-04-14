@@ -1,49 +1,64 @@
-# New-API Docker Compose Configuration
-# 
-# Quick Start:
+# New-API Docker Compose 配置
+#
+# 快速开始：
 #   1. docker-compose up -d
-#   2. Access at http://localhost:3000
+#   2. 访问 http://localhost:13000
 #
-# Using MySQL instead of PostgreSQL:
-#   1. Comment out the postgres service and SQL_DSN line 15
-#   2. Uncomment the mysql service and SQL_DSN line 16
-#   3. Uncomment mysql in depends_on (line 28)
-#   4. Uncomment mysql_data in volumes section (line 64)
+# 使用 MySQL 替代 PostgreSQL：
+#   1. 注释掉 postgres 服务和第 15 行的 SQL_DSN
+#   2. 取消注释 mysql 服务和第 16 行的 SQL_DSN
+#   3. 在 depends_on 中取消注释 mysql（第 28 行）
 #
-# ⚠️  IMPORTANT: Change all default passwords before deploying to production!
+# 启用 BEpusdt（USDT 支付网关）：
+#   1. 取消注释下方的 bepusdt 服务
+#   2. 在 new-api 管理面板 → 设置 → 支付 → USDT 中配置：
+#      - API URL: http://bepusdt:8080
+#      - API Token：（在 BEpusdt 管理后台 → 系统 → API Token 中设置的令牌）
+#
+# ⚠️  重要：部署到生产环境前请修改所有默认密码！
+#
+# 数据目录（可在 .env 或系统环境变量中设置）：
+#   DATA_DIR=.
+# 例如设置为 /data/new-api 后，所有持久化数据将落到该目录下的子目录
+#
+# 数据库密码（建议在 .env 中配置）：
+#   POSTGRES_PASSWORD=change_me_strong_password
+#   # 如使用 MySQL，再配置：
+#   MYSQL_ROOT_PASSWORD=change_me_strong_password
 
-version: '3.4' # For compatibility with older Docker versions
+version: '3.4' # 为兼容较旧版本 Docker
 
 services:
   new-api:
-    image: calciumion/new-api:latest
+    image: altronsoft/new-api:latest
     container_name: new-api
     restart: always
     command: --log-dir /app/logs
     ports:
-      - "3000:3000"
+      - "13000:3000"
     volumes:
-      - ./data:/data
-      - ./logs:/app/logs
+      - ${DATA_DIR:-.}/data:/data
+      - ${DATA_DIR:-.}/logs:/app/logs
     environment:
-      - SYSTEM_NAME=new-api
-      - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
-#      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # Point to the mysql service, uncomment if using MySQL
+      - SYSTEM_NAME=${SYSTEM_NAME:-new-api}
+      - SQL_DSN=postgresql://root:${POSTGRES_PASSWORD:-123456}@postgres:5432/new-api # 从 .env 读取数据库密码
+#      - SQL_DSN=root:${MYSQL_ROOT_PASSWORD:-123456}@tcp(mysql:3306)/new-api  # 指向 mysql 服务，如使用 MySQL 请取消注释
       - REDIS_CONN_STRING=redis://redis
       - TZ=Asia/Shanghai
-      - ERROR_LOG_ENABLED=true # 是否启用错误日志记录 (Whether to enable error log recording)
-      - BATCH_UPDATE_ENABLED=true  # 是否启用批量更新 (Whether to enable batch update)
-#      - STREAMING_TIMEOUT=300  # 流模式无响应超时时间，单位秒，默认120秒，如果出现空补全可以尝试改为更大值 （Streaming timeout in seconds, default is 120s. Increase if experiencing empty completions）
-#      - SESSION_SECRET=random_string  # 多机部署时设置，必须修改这个随机字符串！！ （multi-node deployment, set this to a random string!!!!!!!）
-#      - SYNC_FREQUENCY=60  # Uncomment if regular database syncing is needed
-#      - GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX  # Google Analytics 的测量 ID (Google Analytics Measurement ID)
-#      - UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # Umami 网站 ID (Umami Website ID)
-#      - UMAMI_SCRIPT_URL=https://analytics.umami.is/script.js  # Umami 脚本 URL，默认为官方地址 (Umami Script URL, defaults to official URL)
+      - ERROR_LOG_ENABLED=true # 是否启用错误日志记录
+      - BATCH_UPDATE_ENABLED=true  # 是否启用批量更新
+#      - STREAMING_TIMEOUT=300  # 流模式无响应超时时间（秒），默认 120 秒，如出现空补全可尝试调大
+#      - SESSION_SECRET=random_string  # 多机部署时设置，必须修改为随机字符串！！
+#      - SYNC_FREQUENCY=60  # 如需定期数据库同步请取消注释
+#      - GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX  # Google Analytics 测量 ID
+#      - UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # Umami 网站 ID
+#      - UMAMI_SCRIPT_URL=https://analytics.umami.is/script.js  # Umami 脚本 URL，默认官方地址
 
     depends_on:
       - redis
       - postgres
-#      - mysql  # Uncomment if using MySQL
+#      - mysql  # 如使用 MySQL 请取消注释
+      - bepusdt  # 如使用 BEpusdt USDT 支付请取消注释
     networks:
       - new-api-network
     healthcheck:
@@ -65,32 +80,39 @@ services:
     restart: always
     environment:
       POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456  # ⚠️ IMPORTANT: Change this password in production!
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}  # 从 .env 读取数据库密码
       POSTGRES_DB: new-api
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ${DATA_DIR:-.}/postgres/data:/var/lib/postgresql/data
     networks:
       - new-api-network
-#    ports:
-#      - "5432:5432"  # Uncomment if you need to access PostgreSQL from outside Docker
+    ports:
+      - "15432:5432"  # 默认对外端口为 15432
 
 #  mysql:
 #    image: mysql:8.2
 #    container_name: mysql
 #    restart: always
 #    environment:
-#      MYSQL_ROOT_PASSWORD: 123456  # ⚠️ IMPORTANT: Change this password in production!
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}  # 从 .env 读取数据库密码
 #      MYSQL_DATABASE: new-api
 #    volumes:
-#      - mysql_data:/var/lib/mysql
+#      - ${DATA_DIR:-.}/mysql/data:/var/lib/mysql
 #    networks:
 #      - new-api-network
 #    ports:
-#      - "3306:3306"  # Uncomment if you need to access MySQL from outside Docker
+#      - "3306:3306"  # 默认对外端口为 3306
 
-volumes:
-  pg_data:
-#  mysql_data:
+  bepusdt:
+    image: altronsoft/bepusdt:latest
+    container_name: bepusdt
+    restart: unless-stopped
+    ports:
+      - "13001:8080"  # 默认对外端口为 13001
+    volumes:
+      - ${DATA_DIR:-.}/bepusdt/data:/var/lib/bepusdt
+    networks:
+      - new-api-network
 
 networks:
   new-api-network:

@@ -36,13 +36,17 @@ import (
 )
 
 var (
+	//go:embed web/dist
 	buildFS  embed.FS
 	indexPage []byte
 )
 
 func init() {
-	// In development mode, these will be empty
-	// The frontend will be served by the Vite dev server
+	var err error
+	indexPage, err = buildFS.ReadFile("web/dist/index.html")
+	if err != nil {
+		panic(fmt.Sprintf("failed to load embedded frontend index page: %v", err))
+	}
 }
 
 func main() {

@@ -26,11 +26,21 @@ import {
   Col,
   Typography,
   Spin,
+  Select,
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
+
+// BEpusdt 支持的法币类型（必须大写）
+const SUPPORTED_FIAT_CURRENCIES = [
+  { value: 'CNY', label: 'CNY - 人民币' },
+  { value: 'USD', label: 'USD - 美元' },
+  { value: 'JPY', label: 'JPY - 日元' },
+  { value: 'EUR', label: 'EUR - 欧元' },
+  { value: 'GBP', label: 'GBP - 英镑' },
+];
 
 export default function SettingsPaymentGatewayUsdt(props) {
   const { t } = useTranslation();
@@ -39,7 +49,7 @@ export default function SettingsPaymentGatewayUsdt(props) {
     UsdtEnabled: false,
     UsdtApiUrl: '',
     UsdtApiAuthToken: '',
-    UsdtCurrency: 'cny',
+    UsdtCurrency: 'CNY',
     UsdtNetwork: 'tron',
     UsdtToken: 'usdt',
     UsdtQuotaPerUnit: 500000,
@@ -57,7 +67,7 @@ export default function SettingsPaymentGatewayUsdt(props) {
           props.options.UsdtEnabled === true,
         UsdtApiUrl: props.options.UsdtApiUrl || '',
         UsdtApiAuthToken: props.options.UsdtApiAuthToken || '',
-        UsdtCurrency: props.options.UsdtCurrency || 'cny',
+        UsdtCurrency: props.options.UsdtCurrency?.toUpperCase() || 'CNY',
         UsdtNetwork: props.options.UsdtNetwork || 'tron',
         UsdtToken: props.options.UsdtToken || 'usdt',
         UsdtQuotaPerUnit:
@@ -111,7 +121,7 @@ export default function SettingsPaymentGatewayUsdt(props) {
 
       options.push({
         key: 'UsdtCurrency',
-        value: inputs.UsdtCurrency || 'cny',
+        value: inputs.UsdtCurrency || 'CNY',
       });
       options.push({
         key: 'UsdtNetwork',
@@ -211,11 +221,13 @@ export default function SettingsPaymentGatewayUsdt(props) {
 
           <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-              <Form.Input
+              <Form.Select
                 field='UsdtCurrency'
                 label={t('法币货币代码')}
-                placeholder='cny'
-                extraText={t('法币货币代码，默认 cny')}
+                placeholder={t('选择法币类型')}
+                optionList={SUPPORTED_FIAT_CURRENCIES}
+                extraText={t('BEpusdt 支持的法币类型，必须大写')}
+                style={{ width: '100%' }}
               />
             </Col>
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>

@@ -18,6 +18,15 @@ import (
 	"github.com/QuantumNous/new-api/setting"
 )
 
+// BEpusdt 支持的法币类型（必须大写）
+var supportedFiatCurrencies = map[string]bool{
+	"CNY": true,
+	"USD": true,
+	"JPY": true,
+	"EUR": true,
+	"GBP": true,
+}
+
 // BEpusdtOrderResponse represents the response from BEpusdt create-transaction API.
 type BEpusdtOrderResponse struct {
 	StatusCode int                    `json:"status_code"`
@@ -86,9 +95,20 @@ func VerifyBEpusdtSignature(params map[string]string, signature string, authToke
 }
 
 // CreateBEpusdtOrder calls the BEpusdt API to create a payment order.
-// Compatible with v03413/BEpusdt which uses /api/v1/order/create-transaction
+// Compatible with altronsoft/BEpusdt which uses /api/v1/order/create-transaction
 // and trade_type field (e.g. "usdt.trc20") instead of separate currency/token/network.
 func CreateBEpusdtOrder(orderID string, amount float64, notifyURL string, redirectURL string) (*BEpusdtOrderResponse, error) {
+	// 规范化法币货币代码（必须大写）
+	fiatCurrency := strings.ToUpper(setting.UsdtCurrency)
+	if fiatCurrency == "" {
+		fiatCurrency = "CNY" // 默认使用人民币
+	}
+
+	// 验证法币类型是否支持
+	if !supportedFiatCurrencies[fiatCurrency] {
+		return nil, fmt.Errorf("不支持的法币类型：%s（BEpusdt 仅支持 CNY、USD、JPY、EUR、GBP）", fiatCurrency)
+	}
+
 	// Build trade_type from token + network, e.g. "usdt.trc20"
 	tradeType := setting.UsdtToken + "." + setting.UsdtNetwork
 	if setting.UsdtNetwork == "tron" {
@@ -102,6 +122,7 @@ func CreateBEpusdtOrder(orderID string, amount float64, notifyURL string, redire
 		"notify_url":   notifyURL,
 		"redirect_url": redirectURL,
 		"trade_type":   tradeType,
+		"fiat":         fiatCurrency,
 	}
 
 	signature := ComputeBEpusdtSignature(signParams, setting.UsdtApiAuthToken)
@@ -113,6 +134,7 @@ func CreateBEpusdtOrder(orderID string, amount float64, notifyURL string, redire
 		"notify_url":   notifyURL,
 		"redirect_url": redirectURL,
 		"trade_type":   tradeType,
+		"fiat":         fiatCurrency,
 		"signature":    signature,
 	}
 
@@ -123,7 +145,7 @@ func CreateBEpusdtOrder(orderID string, amount float64, notifyURL string, redire
 
 	apiURL := strings.TrimRight(setting.UsdtApiUrl, "/") + "/api/v1/order/create-transaction"
 
-	common.SysLog(fmt.Sprintf("BEpusdt create order: url=%s, order_id=%s, amount=%g, trade_type=%s", apiURL, orderID, amount, tradeType))
+	common.SysLog(fmt.Sprintf("BEpusdt create order: url=%s, order_id=%s, amount=%g, fiat=%s, trade_type=%s", apiURL, orderID, amount, fiatCurrency, tradeType))
 
 	req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewReader(body))
 	if err != nil {

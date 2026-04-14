@@ -3501,6 +3501,8 @@
     "（当前仅支持易支付接口，默认使用上方服务器地址作为回调地址！）": "(Currently only supports Epay interface, the default callback address is the server address above!)",
     "，当前无生效订阅，将自动使用钱包": ", no active subscription. Wallet will be used automatically.",
     "，时间：": ",time:",
-    "，点击更新": ", click Update"
+    "，点击更新": ", click Update",
+    "BEpusdt 支持的法币类型，必须大写": "Fiat currency supported by BEpusdt (must be uppercase)",
+    "选择法币类型": "Select fiat currency"
   }
 }
