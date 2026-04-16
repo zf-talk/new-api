@@ -6,7 +6,6 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/setting"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -478,7 +477,7 @@ func RechargeUsdt(tradeNo string) error {
 		}
 
 		dAmount := decimal.NewFromInt(topUp.Amount)
-		dQuotaPerUnit := decimal.NewFromFloat(setting.UsdtQuotaPerUnit)
+		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
 		quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
