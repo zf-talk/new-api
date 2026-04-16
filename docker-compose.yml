@@ -111,6 +111,9 @@ services:
       - "13001:8080"  # 默认对外端口为 13001
     volumes:
       - ${DATA_DIR:-.}/bepusdt/data:/var/lib/bepusdt
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - new-api-network
 
